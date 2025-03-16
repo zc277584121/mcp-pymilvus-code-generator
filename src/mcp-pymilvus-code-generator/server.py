@@ -7,20 +7,21 @@ from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 from openai import OpenAI
-from pymilvus import MilvusClient
+from pymilvus import AnnSearchRequest, MilvusClient, WeightedRanker
 from starlette.applications import Starlette
 from starlette.routing import Route
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("sse-mcp-pymilvus-code-generator-server")
 
+
 class PymilvusServer:
     def __init__(
         self,
-        milvus_uri="pymilvus_api_docs.db",
+        milvus_uri="http://loaclhost:19530",
         milvus_token="",
         db_name="default",
-        collection_name="pymilvus_api_docs",
+        collection_name="pymilvus_user_guide",
     ):
         logger.debug("Initializing PymilvusServer")
         self.milvus_client = MilvusClient(uri=milvus_uri, token=milvus_token, db_name=db_name)
@@ -52,16 +53,40 @@ class PymilvusServer:
             return []
 
         try:
-            results = self.milvus_client.search(
-                collection_name=self.collection_name,
+            vector_request = AnnSearchRequest(
                 data=[query_embedding],
-                anns_field="embedding",
+                anns_field="dense",
+                param={
+                    "metric_type": "IP",
+                },
+                limit=top_k,
+            )
+
+            text_request = AnnSearchRequest(
+                data=[query_text],
+                anns_field="sparse",
+                param={
+                    "metric_type": "BM25",
+                },
+                limit=top_k,
+            )
+
+            requests = [vector_request, text_request]
+
+            ranker = WeightedRanker(0.5, 0.5)
+
+            results = self.milvus_client.hybrid_search(
+                collection_name=self.collection_name,
+                reqs=requests,
+                ranker=ranker,
                 limit=top_k,
                 output_fields=["content"],
             )
+
             return results
+
         except Exception as e:
-            logger.error(f"Fail to search similar documents: {e}")
+            logger.warning(f"Hybrid search failed when searching for similar documents: {e}")
             return []
 
     async def pypmilvus_code_generate_helper(self, query) -> str:
