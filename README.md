@@ -1,1 +1,1 @@
-# mcp-pymilvus-code-generator
+# mcp-pymilvus-code-generate-helper

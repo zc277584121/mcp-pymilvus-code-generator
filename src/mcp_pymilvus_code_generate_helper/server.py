@@ -80,7 +80,7 @@ class PymilvusServer:
                 reqs=requests,
                 ranker=ranker,
                 limit=top_k,
-                output_fields=["content"],
+                output_fields=["metadata", "content"],
             )
 
             return results
