@@ -17,6 +17,14 @@ dependencies = [
     "uvicorn>=0.34.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "ollama>=0.4.7",
+    "scikit-learn>=1.6.1",
+    "tqdm>=4.67.1",
+    "volcengine-python-sdk>=1.0.129",
+]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [

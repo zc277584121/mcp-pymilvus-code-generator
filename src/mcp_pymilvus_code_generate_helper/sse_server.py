@@ -12,7 +12,7 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("sse-mcp-pymilvus-code-generator-server")
+logger = logging.getLogger("sse-mcp-pymilvus-code-generate-server")
 
 
 class PymilvusServer:

@@ -1,10 +1,11 @@
 import json
 import os
-import pandas as pd
 import time
-from tqdm import tqdm
 from collections import defaultdict
-from typing import List, Dict, Any
+from typing import Dict, List
+
+import pandas as pd
+from tqdm import tqdm
 
 from src._client import MCPClient
 
@@ -53,9 +54,7 @@ def _calculate_metrics(
     return metrics
 
 
-def _print_metrics_line(
-    metrics: Dict[int, float], metric_name: str, pre_str="", post_str="\n"
-):
+def _print_metrics_line(metrics: Dict[int, float], metric_name: str, pre_str="", post_str="\n"):
     """
     Print metrics in a formatted line.
 
@@ -150,7 +149,9 @@ def evaluate(
         error = False
         for i in range(retry_num):
             try:
-                retrieved_file_names, tool_call_logs = mcp_client.retrieve(query)  #TODO: we can handle tool_call_logs further
+                retrieved_file_names, tool_call_logs = mcp_client.retrieve(
+                    query
+                )  # TODO: we can handle tool_call_logs further
                 break
             except Exception as e:
                 wait_time = base_wait_time * (2**i)
@@ -173,9 +174,7 @@ def evaluate(
         # Print current sample results
         print(f"Sample {global_idx}: {query}")
         _print_metrics_line(metrics["recall"], "Recall", pre_str="Recall metrics: ")
-        _print_metrics_line(
-            metrics["precision"], "Precision", pre_str="Precision metrics: "
-        )
+        _print_metrics_line(metrics["precision"], "Precision", pre_str="Precision metrics: ")
         print(f"Gold file names: {gold_file_names}")
         print(f"Retrieved file names: {retrieved_file_names[:10]}")
         print("-" * 100)
@@ -228,12 +227,8 @@ def evaluate(
         )
 
         # Print average metrics
-        _print_metrics_line(
-            avg_recall, "Avg Recall", pre_str="\nAverage recall metrics: "
-        )
-        _print_metrics_line(
-            avg_precision, "Avg Precision", pre_str="Average precision metrics: "
-        )
+        _print_metrics_line(avg_recall, "Avg Recall", pre_str="\nAverage recall metrics: ")
+        _print_metrics_line(avg_precision, "Avg Precision", pre_str="Average precision metrics: ")
         print("\n")
 
         # Save statistics
@@ -253,9 +248,7 @@ if __name__ == "__main__":
         default="./eval_output",
         help="Output directory for evaluation results",
     )
-    parser.add_argument(
-        "--flag", type=str, default="result", help="Flag for the evaluation run"
-    )
+    parser.add_argument("--flag", type=str, default="result", help="Flag for the evaluation run")
 
     args = parser.parse_args()
 
