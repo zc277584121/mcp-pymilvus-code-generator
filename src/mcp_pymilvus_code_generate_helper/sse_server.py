@@ -12,13 +12,13 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("sse-mcp-pymilvus-code-generate-server")
+logger = logging.getLogger("sse-mcp-pymilvus-code-generate-helper-server")
 
 
 class PymilvusServer:
     def __init__(
         self,
-        milvus_uri="http://loaclhost:19530",
+        milvus_uri="http://localhost:19530",
         milvus_token="",
         db_name="default",
     ):
@@ -149,7 +149,7 @@ class PymilvusServer:
         async def list_tools() -> list[Tool]:
             return [
                 Tool(
-                    name="milvus-generate-pypmilvus-code",
+                    name="milvus-pypmilvus-code-generate-helper",
                     description="Find related pymilvus code/documents to help generating code from user input in natural language",
                     inputSchema={
                         "type": "object",
@@ -163,7 +163,7 @@ class PymilvusServer:
                     },
                 ),
                 Tool(
-                    name="milvus-translate-orm-to-milvus-client-code",
+                    name="milvus-translate-orm-to-milvus-client-code-helper",
                     description="Find related orm and pymilvus client code/documents to help translating orm code to milvus client from user input in natural language",
                     inputSchema={
                         "type": "object",
@@ -182,11 +182,11 @@ class PymilvusServer:
         async def call_tool(
             name: str, arguments: Any
         ) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-            if name == "milvus-generate-pypmilvus-code":
+            if name == "milvus-pypmilvus-code-generate-helper":
                 query = arguments["query"]
                 code = await self.pypmilvus_code_generate_helper(query)
                 return [TextContent(type="text", text=code)]
-            elif name == "milvus-translate-orm-to-milvus-client-code":
+            elif name == "milvus-translate-orm-to-milvus-client-code-helper":
                 query = arguments["query"]
                 code = await self.orm_to_milvus_client_code_translate_helper(query)
                 return [TextContent(type="text", text=code)]
