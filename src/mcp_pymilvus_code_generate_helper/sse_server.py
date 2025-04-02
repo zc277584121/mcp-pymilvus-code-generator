@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 from typing import Any, Sequence
@@ -192,8 +193,8 @@ class PymilvusServer:
                 return [TextContent(type="text", text=code)]
 
 
-def create_app():
-    server = PymilvusServer()
+def create_app(milvus_uri="http://localhost:19530", milvus_token="", db_name="default"):
+    server = PymilvusServer(milvus_uri=milvus_uri, milvus_token=milvus_token, db_name=db_name)
     sse = SseServerTransport("/message")
 
     class HandleSSE:
@@ -223,5 +224,18 @@ def create_app():
 
 
 if __name__ == "__main__":
-    app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=23333)
+    parser = argparse.ArgumentParser(description="PyMilvus Code Generation Helper (SSE Server)")
+    parser.add_argument(
+        "--milvus_uri", type=str, default="http://localhost:19530", help="Milvus server URI"
+    )
+    parser.add_argument("--milvus_token", type=str, default="", help="Milvus server token")
+    parser.add_argument("--db_name", type=str, default="default", help="Milvus database name")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to run the server on")
+    parser.add_argument("--port", type=int, default=23333, help="Port to run the server on")
+
+    args = parser.parse_args()
+
+    app = create_app(
+        milvus_uri=args.milvus_uri, milvus_token=args.milvus_token, db_name=args.db_name
+    )
+    uvicorn.run(app, host=args.host, port=args.port)

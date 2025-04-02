@@ -3,6 +3,8 @@
 
 ![Architecture](./assets/pic/pymilvus-code-generate-helper-arch.png)
 
+![Example](./assets/gif/example.gif)
+
 ## Prerequisites
 
 Before using this MCP server, ensure you have:
@@ -18,7 +20,10 @@ The recommended way to use this MCP server is to run it directly with `uv` witho
 ### SSE
 #### Running the Server
 ```shell
- uv run src/mcp_pymilvus_code_generate_helper/sse_server.py
+uv run src/mcp_pymilvus_code_generate_helper/sse_server.py
+# mcp server will connect to local milvus server(http://localhost:19530) by default if no milvus_uri is provided
+# to connect to a remote milvus server, you can specify the milvus_uri like this:
+# uv run src/mcp_pymilvus_code_generate_helper/sse_server.py --milvus_uri http://<your-server-ip>:<your-server-port>
 ```
 #### Usage with Cursor
 1. Go to `Cursor` > `Preferences` > `Cursor Settings` > `MCP`
@@ -26,15 +31,30 @@ The recommended way to use this MCP server is to run it directly with `uv` witho
 3. Fill out the form:
    - **Name**: `pymilvus-code-generate-helper` (or any name you prefer)
    - **Type**: Select `sse`
-   - **Server URL**: `http://10.100.30.11:8080/sse` (replace with your server's IP address)
+   - **Server URL**: `http://localhost:23333/sse` (replace with your server's IP address)
 4. Click `Save`
+
+You can also directly edit `mcp.json` as below:
+```json
+{
+  "mcpServers": {
+    "pymilvus-code-generate-helper": {
+      "url": "http://localhost:23333/sse"
+    }
+  }
+}
+```
+
 #### Usage with Claude Desktop
 > ⚠️ Claude desktop is currently limited in its ability to connect to remote MCP servers
 
 ### STDIO
 #### Running the Server
 ```shell
- uv run src/mcp_pymilvus_code_generate_helper/stdio_server.py
+uv run src/mcp_pymilvus_code_generate_helper/stdio_server.py
+# mcp server will connect to local milvus server(http://localhost:19530) by default if no milvus_uri is provided
+# to connect to a remote milvus server, you can specify the milvus_uri like this:
+# uv run src/mcp_pymilvus_code_generate_helper/stdio_server.py --milvus_uri http://<your-server-ip>:<your-server-port>
 ```
 #### Usage with Cursor
 1. Go to `Cursor` > `Preferences` > `Cursor Settings` > `MCP`
@@ -44,6 +64,29 @@ The recommended way to use this MCP server is to run it directly with `uv` witho
    - **Type**: Select `stdio`
    - **Command**: `/PATH/TO/uv --directory /path/to/mcp-pymilvus-code-generator run src/mcp_pymilvus_code_generate_helper/stdio_server.py`
 4. Click `Save`
+
+You can also directly edit `mcp.json` as below:
+```json
+{
+  "mcpServers": {
+    "pymilvus-code-generate-helper": {
+      "command": "/PATH/TO/uv",
+      "args": [
+        "--directory",
+        "/path/to/mcp-pymilvus-code-generator",
+        "run",
+        "src/mcp_pymilvus_code_generate_helper/stdio_server.py",
+        "--milvus_uri",
+        "http://localhost:19530"
+      ],
+      "env": {
+        "OPENAI_API_KEY": "YOUR OPENAI API KEY HERE"
+      }
+    }
+  }
+}
+```
+
 #### Usage with Claude Desktop
 1. Install Claude Desktop from https://claude.ai/download
 2. Open your Claude Desktop configuration:
@@ -52,14 +95,19 @@ The recommended way to use this MCP server is to run it directly with `uv` witho
 ```json
 {
   "mcpServers": {
-    "milvus": {
+    "pymilvus-code-generate-helper": {
       "command": "/PATH/TO/uv",
       "args": [
         "--directory",
         "/path/to/mcp-server-milvus/src/mcp_server_milvus",
         "run",
-        "src/mcp_pymilvus_code_generate_helper/stdio_server.py"
-      ]
+        "src/mcp_pymilvus_code_generate_helper/stdio_server.py",
+        "--milvus_uri",
+        "http://localhost:19530"
+      ], 
+      "env": {
+        "OPENAI_API_KEY": "YOUR OPENAI API KEY HERE"
+      }
     }
   }
 }

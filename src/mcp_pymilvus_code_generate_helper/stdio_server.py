@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 import os
@@ -142,7 +143,19 @@ class PymilvusServer:
 
 
 def main():
-    pymilvus_server = PymilvusServer()
+    parser = argparse.ArgumentParser(description="PyMilvus Code Generation Helper")
+    parser.add_argument(
+        "--milvus_uri", type=str, default="http://localhost:19530", help="Milvus server URI"
+    )
+    parser.add_argument("--milvus_token", type=str, default="", help="Milvus server token")
+    parser.add_argument("--db_name", type=str, default="default", help="Milvus database name")
+
+    args = parser.parse_args()
+
+    pymilvus_server = PymilvusServer(
+        milvus_uri=args.milvus_uri, milvus_token=args.milvus_token, db_name=args.db_name
+    )
+
     server = Server("stdio-mcp-pymilvus-code-generate-helper-server")
 
     @server.list_tools()
