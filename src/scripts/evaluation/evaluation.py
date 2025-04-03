@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -7,7 +8,7 @@ from typing import Dict, List
 import pandas as pd
 from tqdm import tqdm
 
-from src._client import MCPClient
+from _client import MCPClient
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -70,7 +71,7 @@ def _print_metrics_line(metrics: Dict[int, float], metric_name: str, pre_str="",
     print(post_str, end="")
 
 
-def evaluate(
+async def evaluate(
     output_dir: str = "./eval_output",
     flag: str = "result",
     retry_num: int = 3,
@@ -85,14 +86,19 @@ def evaluate(
         retry_num: Number of retry attempts for retrieval
         base_wait_time: Base wait time between retries in seconds
     """
+    server_script_path = os.path.join(
+        current_dir, "../..", "mcp_pymilvus_code_generate_helper", "stdio_server.py"
+    )
+    if not os.path.exists(server_script_path):
+        raise FileNotFoundError(f"Server script path not found: {server_script_path}")
+    print(f"Server script path: {server_script_path}")
     # Create MCPClient
     mcp_client = MCPClient(
-        server_script_path=os.path.join(
-            current_dir, "mcp_pymilvus_code_generate_helper", "server.py"
-        ),
+        server_script_path=server_script_path,
         model_name="claude-3-5-sonnet-20241022",
         max_tokens=1000,
     )
+    await mcp_client.connect_to_server()
 
     # Download dataset
     from huggingface_hub import hf_hub_download
@@ -147,20 +153,20 @@ def evaluate(
         # Retrieve files with retry mechanism
         retrieved_file_names = []
         error = False
-        for i in range(retry_num):
-            try:
-                retrieved_file_names, tool_call_logs = mcp_client.retrieve(
-                    query
-                )  # TODO: we can handle tool_call_logs further
-                break
-            except Exception as e:
-                wait_time = base_wait_time * (2**i)
-                print(
-                    f"Retrieval failed for query: {query}. Retry after {wait_time} seconds... Error: {e}"
-                )
-                time.sleep(wait_time)
-                if i == retry_num - 1:
-                    error = True
+        # for i in range(retry_num):
+            # try:
+        retrieved_file_names, tool_call_logs = await mcp_client.retrieve(
+                query
+            )  # TODO: we can handle tool_call_logs further
+            #     break
+            # except Exception as e:
+            #     wait_time = base_wait_time * (2**i)
+            #     print(
+            #         f"Retrieval failed for query: {query}. Retry after {wait_time} seconds... Error: {e}"
+            #     )
+            #     time.sleep(wait_time)
+            #     if i == retry_num - 1:
+            #         error = True
 
         if error:
             total_error_num += 1
@@ -252,4 +258,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    evaluate(output_dir=args.output_dir, flag=args.flag)
+    asyncio.run(evaluate(output_dir=args.output_dir, flag=args.flag))

@@ -58,7 +58,7 @@ class MCPClient:
         tools = response.tools
         print("\nConnected to server with tools:", [tool.name for tool in tools])
 
-    async def aretrieve(self, query: str) -> str:
+    async def retrieve(self, query: str) -> str:
         """Process a query using Claude and available tools"""
         messages = [{"role": "user", "content": QUERY_PROMPT.format(query=query)}]
 
@@ -84,10 +84,8 @@ class MCPClient:
                 tool_args = content.input
 
                 result = await self.session.call_tool(tool_name, tool_args)
+                print(f"Tool call result: {result}")
                 # TODO: transform the result to the format of retrieved file names
                 # retrieved_file_names.append(file_name)
 
         return  # retrieved_file_names
-
-    def retrieve(self, query: str):
-        return asyncio.run(self.aretrieve(query))
