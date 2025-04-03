@@ -4,10 +4,10 @@ import pandas as pd
 from pymilvus import DataType, Function, FunctionType, MilvusClient
 
 
-def create_milvus_client(uri="http://localhost:19530"):
+def create_milvus_client(uri="http://localhost:19530", token="root:Milvus"):
     """Create a Milvus client with the given URI"""
     print(f"Connecting to Milvus server: {uri}")
-    client = MilvusClient(uri=uri)
+    client = MilvusClient(uri=uri, token=token)
     print("Connection successful!")
 
     return client
@@ -63,6 +63,7 @@ def create_collection(client, collection_name, max_content_length, dim):
 
 
 def create_index(client, collection_name, index_type="IVF_FLAT", metric_type="IP"):
+# def create_index(client, collection_name, index_type="IVF_FLAT", metric_type="COSINE"):
     """Create indexes for dense and sparse vectors"""
     print("Creating indexes...")
     index_params = client.prepare_index_params()
@@ -123,9 +124,15 @@ def insert_data(client, collection_name, df):
 
 
 if __name__ == "__main__":
-    uri = "http://localhost:19530"
+    uri = "http://10.100.30.11:19530"
     collection_name = "pymilvus_user_guide"
-    input_file = "user_guide.csv"
+    # collection_name = "mcp_orm"
+    # collection_name = "mcp_milvus_client"
+    # input_file = "user_guide.csv"
+    # input_file = "../../../doc_embedding/user_guide.csv"
+    input_file = "doc_embedding/user_guide_unsplit.csv"
+    # input_file = "ORM.csv"
+    # input_file = "MilvusClient.csv"
 
     client = create_milvus_client(uri)
 
