@@ -6,7 +6,6 @@ from typing import Any, Sequence
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
-
 from milvus_connector import MilvusConnector
 
 logging.basicConfig(level=logging.INFO)
@@ -60,12 +59,35 @@ def main():
                     "required": ["query"],
                 },
             ),
+            Tool(
+                name="milvus-code-translate-helper",
+                description="Find related documents and code snippets in different programming languages for milvus code translation",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "User original query for translating milvus code from one programming language to another",
+                        },
+                        "source_lang": {
+                            "type": "string",
+                            "description": "Source programming language (e.g., 'python', 'java', 'go', 'csharp', 'node', 'restful')",
+                        },
+                        "target_lang": {
+                            "type": "string",
+                            "description": "Target programming language (e.g., 'python', 'java', 'go', 'csharp', 'node', 'restful')",
+                        },
+                    },
+                    "required": ["query", "source_lang", "target_lang"],
+                },
+            ),
         ]
 
     @server.call_tool()
     async def call_tool(
         name: str, arguments: Any
     ) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        name = name.replace("_", "-")
         if name == "milvus-pypmilvus-code-generate-helper":
             query = arguments["query"]
             code = await pymilvus_server.pypmilvus_code_generate_helper(query)
@@ -73,6 +95,14 @@ def main():
         elif name == "milvus-translate-orm-to-milvus-client-code-helper":
             query = arguments["query"]
             code = await pymilvus_server.orm_to_milvus_client_code_translate_helper(query)
+            return [TextContent(type="text", text=code)]
+        elif name == "milvus-code-translate-helper":
+            query = arguments["query"]
+            source_lang = arguments["source_lang"]
+            target_lang = arguments["target_lang"]
+            code = await pymilvus_server.milvus_code_translate_helper(
+                query, source_lang, target_lang
+            )
             return [TextContent(type="text", text=code)]
 
     async def _run():

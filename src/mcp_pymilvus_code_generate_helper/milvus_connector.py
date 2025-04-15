@@ -1,5 +1,6 @@
 import logging
 import os
+
 from openai import OpenAI
 from pymilvus import AnnSearchRequest, MilvusClient, WeightedRanker
 
@@ -23,6 +24,7 @@ class MilvusConnector:
             self.milvus_client.load_collection("pymilvus_user_guide")
             self.milvus_client.load_collection("mcp_orm")
             self.milvus_client.load_collection("mcp_milvus_client")
+            self.milvus_client.load_collection("mcp_multi_lang_docs")
         except Exception as e:
             logger.error(f"Fail to load collection: {e}")
 
@@ -37,7 +39,9 @@ class MilvusConnector:
             logger.error(f"Fail to create embedding from user query: {e}")
             return None
 
-    def search_similar_documents(self, collection_name, query_text, top_k=10):
+    def search_similar_documents(
+        self, collection_name, query_text, top_k=10, output_fields=["metadata", "content"]
+    ):
         query_embedding = self.create_embedding(query_text)
         if query_embedding is None:
             logger.error("Fail to create embedding from user query. Stop.")
@@ -71,7 +75,7 @@ class MilvusConnector:
                 reqs=requests,
                 ranker=ranker,
                 limit=top_k,
-                output_fields=["metadata", "content"],
+                output_fields=output_fields,
             )
 
             return results
@@ -84,8 +88,11 @@ class MilvusConnector:
         """
         Retrieve related pymilvus code/documents for a given query.
 
-        :param query: User query for generating code in natural language
-        :return: related pymilvus code/documents for generating code from user query
+        Args:
+            query: User query for generating code in natural language
+
+        Returns:
+            str: Related pymilvus code/documents for generating code from user query
         """
         results = self.search_similar_documents("pymilvus_user_guide", query)
 
@@ -104,8 +111,11 @@ class MilvusConnector:
         """
         Retrieve related orm and pymilvus client code/documents for a given query.
 
-        :param query: User query for translating orm code to milvus client in natural language
-        :return: related orm and pymilvus client code/documents for a user query
+        Args:
+            query: User query for translating orm code to milvus client in natural language
+
+        Returns:
+            str: Related orm and pymilvus client code/documents for a user query
         """
 
         orm_results = self.search_similar_documents("mcp_orm", query)
@@ -133,3 +143,50 @@ class MilvusConnector:
             related_documents += f"{i + 1}:\n{content}\n\n"
 
         return related_documents
+
+    async def milvus_code_translate_helper(
+        self, query: str, source_lang: str, target_lang: str
+    ) -> str:
+        """
+        Retrieve related documents and code snippets in different programming languages for translation.
+
+        Args:
+            query (str): User original query for translating milvus code from one programming language to another
+            source_lang (str): The source programming language (e.g., 'python', 'java', 'go')
+            target_lang (str): The target programming language (e.g., 'python', 'java', 'go')
+
+        Returns:
+            str: A formatted string containing the related documents and code snippets in both languages,
+                 or an error message if no similar documents are found.
+        """
+        valid_languages = ["python", "node", "java", "go", "csharp", "restful"]
+        if source_lang not in valid_languages or target_lang not in valid_languages:
+            logger.warning(
+                f"Invalid language. source_lang: {source_lang}, target_lang: {target_lang}"
+            )
+            return f"Invalid language. Supported languages are: {', '.join(valid_languages)}"
+
+        results = self.search_similar_documents(
+            "mcp_multi_lang_docs",
+            query,
+            top_k=1,
+            output_fields=["file_name", source_lang, target_lang],
+        )
+
+        if not results:
+            return "No similar documents found."
+
+        formatted_results = f"Found similar documents and code snippets for translation from {source_lang} to {target_lang}:\n\n"
+
+        for i, hit in enumerate(results[0]):
+            entity = hit["entity"]
+            file_name = entity.get("file_name", "Unknown")
+            source_content = entity.get(source_lang)
+            target_content = entity.get(target_lang)
+
+            formatted_results += f"Document {i + 1} (File: {file_name}):\n"
+            formatted_results += f"Source ({source_lang}):\n{source_content}\n\n"
+            formatted_results += f"Target ({target_lang}):\n{target_content}\n"
+            formatted_results += "-" * 80 + "\n\n"
+
+        return formatted_results
