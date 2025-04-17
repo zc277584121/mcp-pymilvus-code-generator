@@ -67,7 +67,7 @@ def main():
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "User original query for translating milvus code from one programming language to another",
+                            "description": "A string of Milvus API names in list format to translate from one programming language to another (e.g., ['create_collection', 'insert', 'search'])",
                         },
                         "source_lang": {
                             "type": "string",

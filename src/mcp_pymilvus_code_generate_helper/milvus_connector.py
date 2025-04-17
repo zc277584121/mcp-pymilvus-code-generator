@@ -1,3 +1,4 @@
+import ast
 import logging
 import os
 
@@ -151,7 +152,7 @@ class MilvusConnector:
         Retrieve related documents and code snippets in different programming languages for translation.
 
         Args:
-            query (str): User original query for translating milvus code from one programming language to another
+            query (str): A string of Milvus API names in list format to translate from one programming language to another (e.g., ['create_collection', 'insert', 'search'])
             source_lang (str): The source programming language (e.g., 'python', 'java', 'go')
             target_lang (str): The target programming language (e.g., 'python', 'java', 'go')
 
@@ -159,6 +160,13 @@ class MilvusConnector:
             str: A formatted string containing the related documents and code snippets in both languages,
                  or an error message if no similar documents are found.
         """
+        try:
+            api_list = ast.literal_eval(query)
+            query = ", ".join(api_list)
+        except (ValueError, SyntaxError) as e:
+            logger.error(f"Failed to parse query string: {e}")
+            return f"Invalid query format. Expected a string representation of a list, got: {query}"
+
         valid_languages = ["python", "node", "java", "go", "csharp", "restful"]
         if source_lang not in valid_languages or target_lang not in valid_languages:
             logger.warning(
@@ -166,19 +174,47 @@ class MilvusConnector:
             )
             return f"Invalid language. Supported languages are: {', '.join(valid_languages)}"
 
-        results = self.search_similar_documents(
-            "mcp_multi_lang_docs",
-            query,
-            top_k=1,
-            output_fields=["file_name", source_lang, target_lang],
+        results = []
+
+        for api in api_list:
+            results.append(
+                self.search_similar_documents(
+                    "mcp_multi_lang_docs",
+                    api,
+                    top_k=1,
+                    output_fields=["file_name", source_lang, target_lang],
+                )
+            )
+
+        results.append(
+            self.search_similar_documents(
+                "mcp_multi_lang_docs",
+                query,
+                top_k=5,
+                output_fields=["file_name", source_lang, target_lang],
+            )
         )
 
         if not results:
             return "No similar documents found."
 
+        # Remove duplicates from results
+        unique_file_names = set()
+        unique_results = []
+        for result in results:
+            print("result")
+            print(result)
+            for hit in result[0]:
+                entity = hit["entity"]
+                file_name = entity.get("file_name", "Unknown")
+                if file_name not in unique_file_names:
+                    unique_file_names.add(file_name)
+                    unique_results.append(hit)
+        results = unique_results
+
         formatted_results = f"Found similar documents and code snippets for translation from {source_lang} to {target_lang}:\n\n"
 
-        for i, hit in enumerate(results[0]):
+        for i, hit in enumerate(results):
             entity = hit["entity"]
             file_name = entity.get("file_name", "Unknown")
             source_content = entity.get(source_lang)
